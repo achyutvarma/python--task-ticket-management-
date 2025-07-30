@@ -1,0 +1,27 @@
+<!-- Description (can be editable or readonly if needed) -->
+<div class="mb-3">
+    <label class="form-label">Description</label>
+    <textarea name="description" class="form-control" rows="3">{{ ticket.description }}</textarea>
+</div>
+
+<!-- Comment history -->
+<div class="mb-3">
+    <label class="form-label">Comment History</label>
+    <div class="bg-light p-2 border rounded" style="max-height: 200px; overflow-y: auto;">
+        {% for comment in ticket.comments %}
+            <div class="mb-2">
+                <strong>{{ comment.author or 'Unknown' }}</strong> - {{ comment.timestamp.strftime('%Y-%m-%d %H:%M') }}<br>
+                {{ comment.content }}
+            </div>
+        {% else %}
+            <p>No comments yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add new comment -->
+<div class="mb-3">
+    <label class="form-label">Add Comment</label>
+    <textarea name="new_comment" class="form-control" rows="2" placeholder="Write your comment here..."></textarea>
+</div>
+

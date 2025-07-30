@@ -1,0 +1,113 @@
+<!-- Updated create_ticket.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Ticket</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 500px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        textarea,
+        select,
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        select[multiple] {
+            height: 100px;
+        }
+
+        input[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            padding: 12px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Create New Ticket</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <label>Ticket No:</label>
+            <input type="text" name="ticket_no" value="{{ ticket_no }}" readonly>
+
+            <label>Title:</label>
+            <input type="text" name="title" required>
+
+            <label>Description:</label>
+            <textarea name="description" rows="5" required></textarea>
+
+            <label>Status:</label>
+            <select name="status">
+                <option value="New">New</option>
+                <option value="On Hold">On Hold</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Closed">Closed</option>
+            </select>
+
+            <label>Severity:</label>
+            <select name="severity">
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+            </select>
+
+            <label>Assign To:</label>
+            <select name="assigned_to">
+              <option value="">-- Select User --</option>
+              {% for user in users %}
+                <option value="{{ user.id }}">{{ user.full_name or user.username }}</option>
+              {% endfor %}
+            </select>
+
+            <label>Upload File:</label>
+            <input type="file" name="attachment">
+
+            <input type="submit" value="Create Ticket">
+        </form>
+    </div>
+</body>
+</html>
+
+
