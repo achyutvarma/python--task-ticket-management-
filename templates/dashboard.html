@@ -70,14 +70,21 @@
                     </div>
                 </div>
 
-                {% if current_user.role == 'admin' %}
+                {% if current_user.role.lower() == 'admin' %}
                 <!-- Admin Only: Create & Delete Users Section -->
                 <div class="card bg-secondary text-white mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Create New User</h5>
                         <form method="POST" action="{{ url_for('create_user') }}">
                             <input type="text" name="username" placeholder="Username" required class="form-control mb-2">
-                            <input type="password" name="password" placeholder="Password" required class="form-control mb-3">
+                            <input type="password" name="password" placeholder="Password" required class="form-control mb-2">
+
+                            <label for="role" class="form-label mt-2">Role:</label>
+                            <select name="role" id="role" class="form-control mb-3" required>
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+
                             <button type="submit" class="btn btn-light btn-sm">Create User</button>
                         </form>
 
@@ -87,11 +94,40 @@
                         <ul class="list-group text-dark">
                             {% for user in users %}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ user.username }}
-                                <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="margin: 0;">
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                </form>
+                                <div>
+                                    <strong>{{ user.username }}</strong>
+                                    <span class="badge bg-secondary ms-2">{{ user.role }}</span>
+                                </div>
+
+                                {% if user.username != current_user.username and user.username != 'admin' %}
+                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ user.id }}">
+                                    Delete
+                                </button>
+                                {% endif %}
                             </li>
+
+                            {% if user.username != current_user.username and user.username != 'admin' %}
+                            <!-- Modal -->
+                            <div class="modal fade" id="confirmDeleteModal{{ user.id }}" tabindex="-1" aria-labelledby="confirmDeleteLabel{{ user.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content text-dark">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="confirmDeleteLabel{{ user.id }}">Confirm Delete</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            Are you sure you want to delete <strong>{{ user.username }}</strong>?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}">
+                                                <button type="submit" class="btn btn-danger">Yes</button>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                             {% endfor %}
                         </ul>
                     </div>
