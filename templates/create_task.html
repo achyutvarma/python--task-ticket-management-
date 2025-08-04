@@ -8,26 +8,47 @@
 <body class="bg-dark text-white">
   <div class="container mt-5">
     <h2>Create Task</h2>
-    <form method="POST">
-      <label>Description:</label>
-      <textarea name="description" class="form-control"></textarea>
-
-      <label>Related Ticket:</label>
-      <select name="ticket_id" class="form-control">
-        {% for ticket in tickets %}
-          <option value="{{ ticket.id }}">{{ ticket.ticket_no }} - {{ ticket.title }}</option>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
         {% endfor %}
-      </select>
+      {% endif %}
+    {% endwith %}
+    
+    <form method="POST">
+      <div class="mb-3">
+        <label for="description" class="form-label">Description:</label>
+        <textarea name="description" class="form-control" required></textarea>
+      </div>
 
-      <label>Time Spent:</label>
-      <input type="text" name="time_spent" class="form-control" />
+      <div class="mb-3">
+        <label for="ticket_id" class="form-label">Related Ticket:</label>
+        <select name="ticket_id" class="form-control" required>
+          {% for ticket in tickets %}
+            <option value="{{ ticket.id }}">{{ ticket.ticket_no }} - {{ ticket.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-      <label>Tool Used:</label>
-      <input type="text" name="tool_used" class="form-control" />
+      <div class="mb-3">
+        <label for="time_spent" class="form-label">Time Spent (hours):</label>
+        <input type="number" step="any" min="0" name="time_spent" class="form-control" required>
+      </div>
 
-      <button type="submit" class="btn btn-primary mt-3">Create Task</button>
+      <div class="mb-3">
+        <label for="tool_used" class="form-label">Tool Used:</label>
+        <input type="text" name="tool_used" class="form-control">
+      </div>
+
+      <button type="submit" class="btn btn-primary">Create Task</button>
     </form>
-
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

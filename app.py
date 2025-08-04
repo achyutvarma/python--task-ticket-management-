@@ -1,6 +1,7 @@
 # Flask App Structure with Templates and Static Files
 
 # File: app.py
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required,current_user
 from flask import Flask, render_template, redirect, url_for, request, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime,timezone
@@ -14,6 +15,20 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dashboard.db'
 db = SQLAlchemy(app)
 # After initializing db
 migrate = Migrate(app, db)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # your login route name
+
+import os
+from werkzeug.utils import secure_filename
+
+# Ensure the uploads/ directory exists
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 # ------------------ MODELS ------------------
 
@@ -43,11 +58,12 @@ class Ticket(db.Model):
     attachment = db.Column(db.String(200))  # store the uploaded filename
 
 
-class User(db.Model):
+class User(db.Model,UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100))
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(50), default='admin') 
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -57,9 +73,12 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.Text, nullable=False)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
-    time_spent = db.Column(db.String(50))
+    time_spent = db.Column(db.Integer)
     tool_used = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # 👈 Add this line
+    created_by = db.relationship('User', backref='created_tasks') 
 
     ticket = db.relationship('Ticket', backref='tasks')
     
@@ -72,59 +91,123 @@ class TicketChangeLog(db.Model):
     changed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 # ------------------ ROUTES ------------------
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 @app.route('/create_user', methods=['GET', 'POST'])
 def create_user():
+    if current_user.role!= 'admin':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('home'))
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        role = request.form.get('role', 'user')  # default to user
 
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            return render_template('create_user.html', error="User already exists")
+            error = "Username already exists."
+            return render_template('create_user.html', error= error)
 
-        new_user = User(username=username, password=password)
+        new_user = User(username=username, password=password, role=role)
         db.session.add(new_user)
         db.session.commit()
-        return redirect('/users')  # or dashboard
+        flash(f"User {username} created with role {role}.", "success")
+        return redirect(url_for('home'))
 
-    return render_template('create_user.html')
+    return render_template('create_user.html',error=None)
 
 @app.route('/users')
-def users():
-    all_users = User.query.all()
-    return render_template('users.html', users=all_users)
+def list_users():
+    if current_user.role!= 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('home'))
+
+    users = User.query.all()
+    return render_template('user.html', users=users)
+
+
 
 @app.route('/')
+@login_required
 def home():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    return render_template('dashboard.html')
+    users = []
+    if current_user.role == 'admin':
+        users = User.query.all()
+    return render_template('dashboard.html', users=users)
+
+
+from flask_login import login_user
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = User.query.filter_by(username=request.form['username'], password=request.form['password']).first()
-        if user:
-            session['username'] = user.username
+        user = User.query.filter_by(username=request.form['username']).first()
+
+        if user and user.password == request.form['password']:  # ideally hash check
+            login_user(user)
             return redirect(url_for('home'))
         else:
-            flash('Invalid credentials')
+            flash('Invalid credentials', 'danger')
+            return redirect(url_for('login'))
+
     return render_template('login.html')
 
+from flask_login import logout_user
+
 @app.route('/logout')
+@login_required
 def logout():
-    session.pop('username', None)
+    logout_user()
+    flash('Logged out successfully.', 'info')
     return redirect(url_for('login'))
 
-@app.route('/tasks/')
-@app.route('/tasks')
-def tasks():
-    print("/tasks route was called")
-    all_tasks = Task.query.all()
-    return render_template('tasks.html', tasks=all_tasks)
+@app.route('/users/delete/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    if current_user.role!= 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('home'))
 
+    user = User.query.get_or_404(user_id)
+    if user.username == current_user.username:
+        flash('You cannot delete yourself.', 'warning')
+        return redirect(url_for('home'))
+
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'User {user.username} deleted successfully.', 'success')
+    return redirect(url_for('home'))
+
+from flask_login import current_user
+
+from flask_login import login_required, current_user
+
+@app.route('/tasks/')
+@app.route('/tasks', methods=['GET', 'POST'])
+@login_required
+def tasks():
+    selected_user_id = request.args.get('user_id')
+
+    if current_user.role == 'admin':
+        users = User.query.all()
+
+        if selected_user_id:
+            tasks = Task.query.filter_by(created_by_id=selected_user_id).all()
+        else:
+            tasks = Task.query.all()
+
+        return render_template('tasks.html', tasks=tasks, users=users, selected_user_id=selected_user_id)
+    
+    else:
+        # Normal user: only see their own tasks
+        tasks = Task.query.filter_by(created_by_id=current_user.id).all()
+        return render_template('tasks.html', tasks=tasks, users=None)
+
+# Add login_required to ensure only logged-in users can access this
 @app.route('/tasks/create', methods=['GET', 'POST'])
+@login_required
 def create_task():
     open_tickets = Ticket.query.filter(Ticket.status != 'Closed').all()
 
@@ -133,8 +216,26 @@ def create_task():
         ticket_id = request.form['ticket_id']
         time_spent = request.form['time_spent']
         tool_used = request.form['tool_used']
+        try:
+            # Validate and convert to float
+            time_spent = float(request.form['time_spent'])
 
-        task = Task(description=description, ticket_id=ticket_id, time_spent=time_spent, tool_used=tool_used)
+            # Optional: You can check for negative numbers
+            if time_spent < 0:
+                raise ValueError("Time spent must be non-negative.")
+
+        except ValueError:
+            flash("Please enter a valid number for time spent.", "danger")
+            return render_template('create_task.html', tickets=open_tickets)
+        #  Include created_by_id from current_user.id
+        task = Task(
+            description=description,
+            ticket_id=ticket_id,
+            time_spent=time_spent,
+            tool_used=tool_used,
+            created_by_id=current_user.id
+        )
+
         db.session.add(task)
         db.session.commit()
         return redirect(url_for('tasks'))
@@ -142,6 +243,7 @@ def create_task():
     return render_template('create_task.html', tickets=open_tickets)
 
 @app.route('/tasks/<int:task_id>', methods=['GET', 'POST'])
+@login_required
 def view_task(task_id):
     task = Task.query.get_or_404(task_id)
     tickets = Ticket.query.filter(Ticket.status != 'Closed').all()
@@ -153,16 +255,54 @@ def view_task(task_id):
         task.tool_used = request.form['tool_used']
         db.session.commit()
         flash("Task updated successfully", "success")
-        return redirect(url_for('list_tasks'))
+        return redirect(url_for('tasks'))
 
     return render_template('view_task.html', task=task, tickets=tickets)
 
 
+from flask_login import current_user, login_required
+from flask import redirect, url_for, flash
 
 @app.route('/tickets')
-def tickets():
-    all_tickets = Ticket.query.all()
-    return render_template('tickets.html', tickets=all_tickets)
+def list_tickets():
+    if not current_user.is_authenticated:
+        flash('Please log in to view tickets.', 'danger')
+        return redirect(url_for('login'))
+
+    selected_user_id = request.args.get('user', type=int)
+    selected_status = request.args.get('status', default='open')
+
+    query = Ticket.query
+
+    # Role-based ticket visibility
+    if current_user.role == 'admin':
+        if selected_user_id:
+            query = query.filter(Ticket.assigned_to == selected_user_id)
+    else:
+        query = query.filter(
+            (Ticket.requested_by == current_user.id) |
+            (Ticket.assigned_user.has(id=current_user.id))
+        )
+
+    # Status filter
+    if selected_status == 'open':
+        query = query.filter(Ticket.status != 'Closed')
+    elif selected_status == 'closed':
+        query = query.filter(Ticket.status == 'Closed')
+    # else 'all' – no additional filter
+
+    tickets = query.all()
+    users = User.query.all() if current_user.role == 'admin' else []
+
+    return render_template(
+        'tickets.html',
+        tickets=tickets,
+        users=users,
+        selected_user_id=selected_user_id,
+        current_user_role=current_user.role,
+        selected_status=selected_status
+    )
+
 
 import os
 from flask import request, redirect, render_template, url_for, flash
@@ -178,7 +318,7 @@ def create_ticket():
         severity = request.form.get('severity')
         assigned_to = request.form.get('assigned_to')
         assigned_to = int(assigned_to) if assigned_to else None 
-        requested_by = session.get('username')  # or however you're tracking login
+        requested_by = current_user.username # or however you're tracking login
         created_at = datetime.now(timezone.utc) 
         ticket_no = request.form.get('ticket_no')
 
@@ -201,7 +341,7 @@ def create_ticket():
         )
         db.session.add(ticket)
         db.session.commit()
-        return redirect(url_for('tickets'))
+        return redirect(url_for('list_tickets'))
     users = User.query.all()
     generated_ticket_no = str(uuid.uuid4())[:8]
     return render_template('create_ticket.html', users=users, ticket_no=generated_ticket_no)
@@ -227,7 +367,7 @@ def ticket_detail(ticket_id):
         ticket.assigned_to = assigned_user_id
         db.session.commit()
         flash("Ticket updated successfully!", "success")
-        return redirect(url_for('tickets'))
+        return redirect(url_for('list_tickets'))
 
     return render_template('ticket_detail.html', ticket=ticket, users=users)
 
@@ -244,7 +384,7 @@ def edit_ticket(ticket_id):
                 comment = Comment(
                     content=new_comment,
                     ticket_id=ticket.id,
-                    author=session.get('username', 'Anonymous')  # fallback
+                    author=current_user.username if current_user.is_authenticated else 'Anonymous'# fallback
                 )
                 db.session.add(comment)
                 db.session.commit()
