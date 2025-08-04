@@ -73,13 +73,13 @@ flask-taskmanager/
       <img width="1572" height="421" alt="image" src="https://github.com/user-attachments/assets/5d5e629a-04ea-4b09-9efc-e04c8eda6ea9" />
 
   - Ticket/Task CRUD
-    
+    - Task(user)
       <img width="1866" height="926" alt="image" src="https://github.com/user-attachments/assets/4df91725-7fbb-4ece-904a-fb1a3da74845" />
-
+    - Ticket(user)
       <img width="1899" height="923" alt="image" src="https://github.com/user-attachments/assets/daa2948b-d34f-4f3f-9f46-94ffbd013835" />
-
+    - Task(admin)
       <img width="1877" height="944" alt="image" src="https://github.com/user-attachments/assets/8a1a87de-14bf-47f5-919c-4dddc3a92ca1" />
-
+    - - Ticket(admin)
       <img width="1878" height="923" alt="image" src="https://github.com/user-attachments/assets/0fdd9011-b84e-457b-a6c2-4e00cadbfb5e" />
 
 
@@ -122,11 +122,16 @@ Visit: http://127.0.0.1:5000
 - Regular User View:
   - Cannot access user management section.
   - Limited to their own tickets and tasks.
+     -  creating task
+     -  <img width="1896" height="934" alt="image" src="https://github.com/user-attachments/assets/c5e25f69-c942-4813-a4ae-37ab67eb82e2" />
+
 
   
 
 - Creating a Ticket:
   - Auto-assigned number like SRX5B2K8 shown in form and used everywhere consistently.
+    - <img width="1878" height="930" alt="image" src="https://github.com/user-attachments/assets/f0b3626f-74fc-47c8-88bf-1df7732a8691" />
+
 
 - Form Validations:
   - Only numeric input allowed for "Time Spent".
