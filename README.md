@@ -65,12 +65,15 @@ flask-taskmanager/
      <img width="1886" height="947" alt="image" src="https://github.com/user-attachments/assets/89e609ba-b868-473a-adfc-355317b1d4ec" />
 
   - Dashboard view
+
      <img width="1862" height="946" alt="image" src="https://github.com/user-attachments/assets/63297708-bd3e-41d4-a1e9-420811a34630" />
 
   - User creation/deletion
+    
       <img width="1572" height="421" alt="image" src="https://github.com/user-attachments/assets/5d5e629a-04ea-4b09-9efc-e04c8eda6ea9" />
 
   - Ticket/Task CRUD
+    
       <img width="1866" height="926" alt="image" src="https://github.com/user-attachments/assets/4df91725-7fbb-4ece-904a-fb1a3da74845" />
 
       <img width="1899" height="923" alt="image" src="https://github.com/user-attachments/assets/daa2948b-d34f-4f3f-9f46-94ffbd013835" />
@@ -113,21 +116,21 @@ Visit: http://127.0.0.1:5000
 
 ## Usage Tips
 - Admin Dashboard:
-  Create new users, assign roles.
-  Filter and view all tickets and tasks.
+  - Create new users, assign roles.
+  - Filter and view all tickets and tasks.
 
 - Regular User View:
-  Cannot access user management section.
-  Limited to their own tickets and tasks.
+  - Cannot access user management section.
+  - Limited to their own tickets and tasks.
 
   
 
 - Creating a Ticket:
-  Auto-assigned number like SRX5B2K8 shown in form and used everywhere consistently.
+  - Auto-assigned number like SRX5B2K8 shown in form and used everywhere consistently.
 
 - Form Validations:
-  Only numeric input allowed for "Time Spent".
-  Error messages shown for invalid inputs.
+  - Only numeric input allowed for "Time Spent".
+  - Error messages shown for invalid inputs.
 
 # ✅ Default Admin Configuration
 The application defines a variable in app.py:
