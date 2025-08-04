@@ -263,9 +263,19 @@ def view_task(task_id):
 
     return render_template('view_task.html', task=task, tickets=tickets)
 
+import random
+import string
+
+def generate_ticket_number():
+    random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    return f"SR{random_part}"
+
+
 
 from flask_login import current_user, login_required
 from flask import redirect, url_for, flash
+
+
 
 @app.route('/tickets')
 def list_tickets():
@@ -325,7 +335,7 @@ def create_ticket():
         assigned_to = int(assigned_to) if assigned_to else None 
         requested_by = current_user.username # or however you're tracking login
         created_at = datetime.now(timezone.utc) 
-        ticket_no = request.form.get('ticket_no')
+        ticket_no = request.form['ticket_no'] 
 
         file = request.files['attachment']
         filename = None
@@ -344,12 +354,14 @@ def create_ticket():
             ticket_no=ticket_no,
             attachment=filename
         )
+
         db.session.add(ticket)
         db.session.commit()
         return redirect(url_for('list_tickets'))
+    
     users = User.query.all()
-    generated_ticket_no = str(uuid.uuid4())[:8]
-    return render_template('create_ticket.html', users=users, ticket_no=generated_ticket_no)
+    ticket_no = generate_ticket_number() 
+    return render_template('create_ticket.html', users=users,ticket_no=ticket_no)
 
 
 @app.route('/update_ticket/<int:id>', methods=['POST'])
