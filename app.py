@@ -129,14 +129,14 @@ def list_users():
     return render_template('user.html', users=users)
 
 
-
+DEFAULT_ADMIN_USERNAME = "admin" 
 @app.route('/')
 @login_required
 def home():
     users = []
     if current_user.role == 'admin':
         users = User.query.all()
-    return render_template('dashboard.html', users=users)
+    return render_template('dashboard.html', users=users,default_admin=DEFAULT_ADMIN_USERNAME)
 
 
 from flask_login import login_user
@@ -173,6 +173,10 @@ def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     if user.username == current_user.username:
         flash('You cannot delete yourself.', 'warning')
+        return redirect(url_for('home'))
+    
+    if user.username == DEFAULT_ADMIN_USERNAME:
+        flash('You cannot delete the default admin.', 'danger')
         return redirect(url_for('home'))
 
     db.session.delete(user)
@@ -271,6 +275,7 @@ def list_tickets():
 
     selected_user_id = request.args.get('user', type=int)
     selected_status = request.args.get('status', default='open')
+   
 
     query = Ticket.query
 
@@ -411,8 +416,8 @@ if __name__ == '__main__':
         db.create_all()
 
         #  Auto-create admin user if it doesn't exist
-        if not User.query.filter_by(username='admin').first():
-            admin_user = User(username='admin', password='admin123')
+        if not User.query.filter_by(username=DEFAULT_ADMIN_USERNAME).first():
+            admin_user = User(username=DEFAULT_ADMIN_USERNAME, password='admin123')
             db.session.add(admin_user)
             db.session.commit()
             print(" Admin user created: admin / admin123")
